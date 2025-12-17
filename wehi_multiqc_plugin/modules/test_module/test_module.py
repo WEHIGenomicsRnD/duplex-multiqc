@@ -78,11 +78,12 @@ class MultiqcModule(BaseMultiqcModule):
             return
 
         # Add general stats table
-        self.general_stats_addcols(self.data, header=table_headers)
+        self.general_stats_addcols(self.data, headers=table_headers)
 
         # Define metric-to-plot function mapping
         metric_plot_mapping = {
             "Efficiency": self.plot_bargraph,
+            "drop_out_rate" : self.plot_bargraph
             # Add more mappings here
         }
 
@@ -101,7 +102,7 @@ class MultiqcModule(BaseMultiqcModule):
     def plot_bargraph(self, data_dict, metric):
     # Convert {sample: value} dict to a list with one dict as required by MultiQC
       data = [
-        {sample: {"count": value} for sample, value in data_dict.items()}
+        {sample: { metric: value} for sample, value in data_dict.items()}
         ]
       pconfig = {
         'id': f'test_module_barplot_{metric.lower()}',
@@ -109,6 +110,7 @@ class MultiqcModule(BaseMultiqcModule):
         'xlab': 'Sample',
         'ylab': metric,
         'xmin': 0,
+         "tt_label": "{x}: {y:.4f}", 
         }
       return bargraph.plot(data, pconfig=pconfig)
 
