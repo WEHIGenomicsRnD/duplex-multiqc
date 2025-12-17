@@ -62,12 +62,12 @@ class MultiqcModule(BaseMultiqcModule):
                         metrics_dict[metric][sample] = value
 
                     # Store table headers only once
-                    if reader.fieldnames:
-                        for col in reader.fieldnames:
-                            table_headers[col] = {
-                                "title": col,
-                                "description": f"{col} column"
-                            }
+                    if metrics_dict:
+                        for metric in metrics_dict:
+                            table_headers[metric] = {"title" : metric, 
+                                                  "description" : f"{metric} column",
+                                                  "format": "{:.5f}",
+                                                  }
 
             except Exception as e:
                 log.error(f"[TestModule] Failed to read {filepath}: {e}")
@@ -78,7 +78,7 @@ class MultiqcModule(BaseMultiqcModule):
             return
 
         # Add general stats table
-        self.general_stats_addcols(self.data, table_headers)
+        self.general_stats_addcols(self.data, header=table_headers)
 
         # Define metric-to-plot function mapping
         metric_plot_mapping = {
