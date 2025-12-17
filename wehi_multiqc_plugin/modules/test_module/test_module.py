@@ -62,11 +62,13 @@ class MultiqcModule(BaseMultiqcModule):
                         metrics_dict[metric][sample] = value
 
                     # Store table headers only once
+                    colors = ["PuBu", "BuPu", "BuGn", "Oranges", "RdPu"]
                     if metrics_dict:
-                        for metric in metrics_dict:
+                        for i, metric in enumerate(metrics_dict):
                             table_headers[metric] = {"title" : metric, 
                                                   "description" : f"{metric} column",
                                                   "format": "{:.5f}",
+                                                  "scale":  colors[i % len(colors)]
                                                   }
 
             except Exception as e:
@@ -78,6 +80,7 @@ class MultiqcModule(BaseMultiqcModule):
             return
 
         # Add general stats table
+        log.warning("hello world")
         self.general_stats_addcols(self.data, headers=table_headers)
 
         # Define metric-to-plot function mapping
@@ -110,7 +113,7 @@ class MultiqcModule(BaseMultiqcModule):
         'xlab': 'Sample',
         'ylab': metric,
         'xmin': 0,
-         "tt_label": "{x}: {y:.4f}", 
+        "tt_decimals": 6,
         }
       return bargraph.plot(data, pconfig=pconfig)
 
