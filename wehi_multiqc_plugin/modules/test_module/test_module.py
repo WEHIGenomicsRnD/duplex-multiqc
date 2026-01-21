@@ -114,6 +114,8 @@ class MultiqcModule(BaseMultiqcModule):
         'ylab': metric,
         'xmin': 0,
         "tt_decimals": 6,
+        "cpswitch": False,
+       
         }
       return bargraph.plot(data, pconfig=pconfig)
 
