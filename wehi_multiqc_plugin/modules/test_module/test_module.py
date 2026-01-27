@@ -78,17 +78,30 @@ class MultiqcModule(BaseMultiqcModule):
         if not self.data:
             log.warning("[TestModule] No data rows found to display.")
             return
-
+        
         # Add general stats table
-        log.warning("hello world")
         self.general_stats_addcols(self.data, headers=table_headers)
 
         # Define metric-to-plot function mapping
         metric_plot_mapping = {
             "Efficiency": self.plot_bargraph,
-            "drop_out_rate" : self.plot_bargraph
+            "drop_out_rate" : self.plot_bargraph,
+            "frac_singletons": self.plot_bargraph,
+            "gc_single": self.plot_bargraph,
+            "gc_both": self.plot_bargraph,
+            "gc_deviation": self.plot_bargraph,
+            "total_families": self.plot_bargraph,
+            "family_mean" : self.plot_bargraph,
+            "family_median" : self.plot_bargraph,
+            "family_max" : self.plot_bargraph,
+            "families_gt1" : self.plot_bargraph,
+            "single_families" : self.plot_bargraph,
+            "paired_families": self.plot_bargraph,
+            "paired_and_gt1": self.plot_bargraph,
+            
             # Add more mappings here
         }
+
 
         # plot section for each metric
         for metric, sample_values in metrics_dict.items():
@@ -101,8 +114,10 @@ class MultiqcModule(BaseMultiqcModule):
                 description=f"Plot for metric: {metric}",
                 plot=plot_config
             )
+
      # Uses MultiQC's built-in bargraph plotting utility
     def plot_bargraph(self, data_dict, metric):
+      
     # Convert {sample: value} dict to a list with one dict as required by MultiQC
       data = [
         {sample: { metric: value} for sample, value in data_dict.items()}
@@ -115,9 +130,20 @@ class MultiqcModule(BaseMultiqcModule):
         'xmin': 0,
         "tt_decimals": 6,
         "cpswitch": False,
-       
         }
+      
       return bargraph.plot(data, pconfig=pconfig)
+    
+
+
+
+
+
+
+        
+
+
+
 
 
         
