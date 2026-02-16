@@ -12,35 +12,37 @@ log = logging.getLogger(__name__)
 class MultiqcModule(BaseMultiqcModule):
     def __init__(self):
         super().__init__(
-            name="Efficiency E.Coli K12 Analyses",
-            anchor="test_module",
-            info="..."
+            name="Duplex Sequencing Metrics",
+            anchor="duplex_metrics",
+            info="MultiQC module for plotting duplex sequencing QC metrics"
         )
 
         self.data = {}
         table_headers = {}
-        plot_data = {}
 
         # Metric → Plot Data
         # Format: { metric1: { sample1: value1, sample2: value2 }, ... }
         metrics_dict = {}
 
-        matched_files = self.find_log_files('test_module')
-        if not matched_files:
+        matched_csv_files = self.find_log_files('test_module')
+
+        if not matched_csv_files:
             log.info("[TestModule] No matched files found.")
             return
 
-        for f in matched_files:
+        for f in matched_csv_files:
+            
             filepath = os.path.join(f['root'], f['fn'])
+            log.warning(f"[TestModule] Processing file: {f['fn']}")
             log.info(f"[TestModule] Processing file: {filepath}")
 
             try:
                 with open(filepath, 'r') as handle:
-                    reader = csv.DictReader(handle, delimiter='\t')
+                    reader = csv.DictReader(handle, delimiter=',')
                     for row in reader:
-                        sample = row.get('Sample')
-                        metric = row.get('Metric')
-                        value = row.get('Value')
+                        sample = row.get('sample')
+                        metric = row.get('metric')
+                        value = row.get('value')
 
                         if not sample or not metric or value is None:
                             log.warning(f"Missing required field in row: {row}")
@@ -129,8 +131,6 @@ class MultiqcModule(BaseMultiqcModule):
         }
 
 
-
-
         # plot section for each metric
         for metric, sample_values in metrics_dict.items():
             if metric not in grouped_keys:
@@ -138,14 +138,13 @@ class MultiqcModule(BaseMultiqcModule):
                 plot_config = plot_func(sample_values, metric)
 
                 self.add_section(
-                    name=f"{metric} Plot",
+                    name=f"{metric}",
                     anchor=f"test_module_{metric.lower()}_plot",
                     description=f"Plot for metric: {metric}",
                     plot=plot_config
                 )
 
         # plot gc section 
-
         if gc_metrics:
             self.add_section(
                 name="GC Metrics",
@@ -171,7 +170,6 @@ class MultiqcModule(BaseMultiqcModule):
             )
 
 
-        
     def plot_bargraph(self, data_dict, metric):
       
    
@@ -228,7 +226,7 @@ class MultiqcModule(BaseMultiqcModule):
     
     def plot_family_metrics(self, metric_dict, metric_title):
             """
-            Creates a stacked bar graph starting with single_families at the bottom.
+            Creates a group bar graph starting with single_families at the bottom.
             """
             plot_data = {}
             
@@ -282,20 +280,3 @@ class MultiqcModule(BaseMultiqcModule):
             }
 
             return bargraph.plot(plot_data, cats, pconfig=pconfig)
-                    
-
-
-
-
-
-
-
-        
-
-
-
-
-
-        
-        
-

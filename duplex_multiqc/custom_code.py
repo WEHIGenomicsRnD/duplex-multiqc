@@ -18,12 +18,13 @@ def execute():
     log.info("Running execute() from custom MultiQC plugin")
 
     # Plugin's version number defined in pyproject.toml:
-    version = importlib_metadata.version("wehi_multiqc_plugin")
+    version = importlib_metadata.version("duplex_multiqc")
     log.info("Running MultiQC Plugin v{}".format(version))
     search_patterns = {
-        'test_module': { 'fn': '*.tsv' }
-    }
-
+            'test_module': {
+                'fn': '*.csv',
+            }
+        }
     # Add a custom search pattern for 'test_module' if it doesn't already exist
     # Add to the search patterns used by modules
     for pattern_name, pattern in search_patterns.items():
