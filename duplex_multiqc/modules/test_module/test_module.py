@@ -2,9 +2,7 @@ from multiqc.modules.base_module import BaseMultiqcModule
 import os
 import logging
 import csv
-import math
-from multiqc.utils import config
-from multiqc.plots import bargraph, scatter
+from multiqc.plots import bargraph
 from collections import OrderedDict
 
 log = logging.getLogger(__name__)
