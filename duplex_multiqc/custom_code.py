@@ -23,6 +23,8 @@ def execute():
     search_patterns = {
             'test_module': {
                 'fn': '*.csv',
+                'contents' : "sample,metric,value",
+                'num_lines': 1
             }
         }
     # Add a custom search pattern for 'test_module' if it doesn't already exist
