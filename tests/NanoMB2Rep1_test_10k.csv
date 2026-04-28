@@ -1,0 +1,15 @@
+sample,metric,value
+NanoMB2Rep1_test_10k,frac_singletons,0.0198345612109456
+NanoMB2Rep1_test_10k,efficiency,0.0512334521098765
+NanoMB2Rep1_test_10k,drop_out_rate,0.203418762345123
+NanoMB2Rep1_test_10k,gc_single,0.534712345678901
+NanoMB2Rep1_test_10k,gc_both,0.535198234567890
+NanoMB2Rep1_test_10k,gc_deviation,0.000485889012345
+NanoMB2Rep1_test_10k,total_families,10234
+NanoMB2Rep1_test_10k,family_mean,9.123456789012
+NanoMB2Rep1_test_10k,family_median,9
+NanoMB2Rep1_test_10k,family_max,38
+NanoMB2Rep1_test_10k,families_gt1,8102
+NanoMB2Rep1_test_10k,single_families,1753
+NanoMB2Rep1_test_10k,paired_families,6234
+NanoMB2Rep1_test_10k,paired_and_gt1,5312

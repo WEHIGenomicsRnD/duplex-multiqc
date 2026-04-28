@@ -1,51 +1,159 @@
-# WEHI MultiQC Plugin
-This is a custom MultiQC plugin developed at WEHI for parsing `.tsv` input files with `Sample`, `Metric`, and `Value` columns. 
-It adds per-metric plots to your MultiQC reports.
+# duplex-multiqc
+
+A [MultiQC](https://multiqc.info/) plugin for parsing and visualising duplex sequencing QC metrics. It reads per-sample, per-metric tabular data (CSV or TSV) and generates interactive bar plots in your MultiQC report.
 
 ---
 
 ## Features
 
-- Parses `.tsv` files with 3-column structure (`Sample`, `Metric`, `Value`)
-- Dynamically generates per-metric plots (e.g., bar plots)
-- Works with MultiQC v1.14
+- Parses `.csv` and `.tsv` files with a `sample`, `metric`, `value` column structure
+- Column headers are case-insensitive (`Sample` and `sample` both work)
+- Dynamically generates per-metric bar plots
+- Groups related metrics into combined plots:
+  - **GC Metrics** — `gc_single`, `gc_both`
+  - **Family Metrics** — `family_mean`, `family_median`, `family_max`, `single_families`
+  - **Family Size Metrics** — `families_gt1`, `single_families`, `paired_families`, `paired_and_gt1`
+- Adds all metrics to the MultiQC general statistics table
 
 ---
 
-## Installation and Usage
+## Requirements
 
-First, make sure you have [Python](https://www.python.org/) and [MultiQC](https://multiqc.info/) installed.
+- Python ≥ 3.8
+- MultiQC == 1.14
+
+---
+
+## Installation
+
+### With uv (recommended)
+
+[uv](https://docs.astral.sh/uv/) provides fast, reproducible environment management.
 
 ```bash
-pip install multiqc==1.14
+# Clone the repository
+git clone https://github.com/WEHIGenomicsRnD/duplex-multiqc.git
+cd duplex-multiqc
 
-Then install the plugin locally:
+# Create a virtual environment and install the plugin (and its dependencies)
+uv sync
 
-git clone https://github.com/YOUR-ORG/wehi_multiqc_plugin.git
-cd wehi_multiqc_plugin
+# Run MultiQC using the managed environment
+uv run multiqc path/to/input/
+```
+
+To include development dependencies (e.g. for running tests):
+
+```bash
+uv sync --group dev
+```
+
+### With pip
+
+```bash
+git clone https://github.com/WEHIGenomicsRnD/duplex-multiqc.git
+cd duplex-multiqc
 pip install .
+```
 
-This registers the plugin with MultiQC automatically.
+---
 
-The plugin currently expects tab-delimited .tsv files with the following structure:
-Sample    Metric      Value
-Note: Column headers must be exactly: Sample, Metric, and Value.
+## Input Format
 
-Usage:
+The plugin matches files named `*.csv` or `*.tsv` whose first line contains the headers `sample,metric,value` (CSV) or `sample\tmetric\tvalue` (TSV). Column names are **case-insensitive**.
 
+### CSV example
+
+```
+sample,metric,value
+SampleA,efficiency,0.055
+SampleA,drop_out_rate,0.192
+SampleB,efficiency,0.043
+```
+
+### TSV example
+
+```
+Sample	Metric	Value
+SampleA	Efficiency	0.055
+SampleA	drop_out_rate	0.192
+```
+
+### Supported metrics
+
+| Metric | Description |
+|---|---|
+| `efficiency` | Duplex efficiency |
+| `drop_out_rate` | Read drop-out rate |
+| `frac_singletons` | Fraction of singleton reads |
+| `gc_single` | GC content (single-strand families) |
+| `gc_both` | GC content (duplex families) |
+| `gc_deviation` | GC deviation between strands |
+| `total_families` | Total number of families |
+| `family_mean` | Mean family size |
+| `family_median` | Median family size |
+| `family_max` | Maximum family size |
+| `families_gt1` | Families with more than one read |
+| `single_families` | Single-read families |
+| `paired_families` | Paired families |
+| `paired_and_gt1` | Paired families with more than one read |
+
+Any additional metrics present in the input files will be plotted as individual bar charts.
+
+---
+
+## Usage
+
+```bash
+# Basic usage — MultiQC will discover matching files automatically
 multiqc path/to/input/
 
-- To enable verbose/debug mode:
+# Force overwrite an existing report
+multiqc --force path/to/input/
+
+# Verbose/debug output (useful for diagnosing file detection issues)
 multiqc -v path/to/input/
-This helps identify issues with file detection or parsing.
-You can also --force to overwrite any existing reports.
+```
 
-Output:
+The report is written to `multiqc_report.html` in the current directory. Additional data files are saved in `multiqc_data/`.
 
-The report will be generated as multiqc_report.html in the current or specified directory.
-Additional data will be saved in the multiqc_data/ folder.
+---
 
-Notes:
+## Development
 
-The plugin automatically creates per-metric plots.
-Metric-specific plotting styles can be customized in test_module.py.
+### Running tests
+
+```bash
+# With uv
+uv run pytest tests/
+
+# With pip-installed environment
+pytest tests/
+```
+
+### Project structure
+
+```
+duplex_multiqc/
+  custom_code.py              # MultiQC hook — registers search patterns
+  modules/
+    duplex_seq/
+      duplex_seq.py           # Main module: parsing and plot generation
+      __init__.py
+tests/
+  test.csv                    # Sample test fixture (CSV, lowercase headers)
+  sampledata.tsv              # Sample test fixture (TSV, uppercase headers)
+  test_plugin.py              # pytest test suite
+pyproject.toml
+```
+
+---
+
+## Contributing
+
+1. Fork the repository and create a feature branch.
+2. Install the dev environment: `uv sync --group dev`
+3. Make your changes and add tests in `tests/test_plugin.py`.
+4. Run `uv run pytest tests/` and ensure all tests pass.
+5. Open a pull request against `main`.
+
