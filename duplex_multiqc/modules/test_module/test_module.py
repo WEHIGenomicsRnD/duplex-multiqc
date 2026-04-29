@@ -10,6 +10,7 @@ log = logging.getLogger(__name__)
 
 class MultiqcModule(BaseMultiqcModule):
     def __init__(self):
+        """Initialize module state and render sections from parsed metrics."""
         super().__init__(
             name="Duplex Sequencing Metrics",
             anchor="duplex_metrics",
@@ -17,91 +18,103 @@ class MultiqcModule(BaseMultiqcModule):
         )
 
         self.data = {}
-        table_headers = {}
-
-        # Metric → Plot Data
-        # Format: { metric1: { sample1: value1, sample2: value2 }, ... }
-        metrics_dict = {}
-
         matched_csv_files = self.find_log_files("test_module")
-
         if not matched_csv_files:
             log.info("[TestModule] No matched files found.")
             return
 
-        for f in matched_csv_files:
-            filepath = os.path.join(f["root"], f["fn"])
-            log.warning(f"[TestModule] Processing file: {f['fn']}")
-            log.info(f"[TestModule] Processing file: {filepath}")
-
-            try:
-                with open(filepath, "r") as handle:
-                    reader = csv.DictReader(handle, delimiter=",")
-                    for row in reader:
-                        sample = row.get("sample")
-                        metric = row.get("metric")
-                        value = row.get("value")
-
-                        if not sample or not metric or value is None:
-                            log.warning(f"Missing required field in row: {row}")
-                            continue
-
-                        try:
-                            value = float(value)
-                        except ValueError:
-                            log.warning(
-                                f"Non-numeric value for sample '{sample}' metric '{metric}': {value}"
-                            )
-                            continue
-
-                        # Add to general stats table
-                        if sample not in self.data:
-                            self.data[sample] = {}
-                        self.data[sample][metric] = value
-
-                        # Prepare plot data by metric
-                        if metric not in metrics_dict:
-                            metrics_dict[metric] = {}
-                        metrics_dict[metric][sample] = value
-
-                    # Store table headers only once
-                    colors = ["PuBu", "BuPu", "BuGn", "Oranges", "RdPu"]
-                    if metrics_dict:
-                        for i, metric in enumerate(metrics_dict):
-                            table_headers[metric] = {
-                                "title": metric,
-                                "description": f"{metric} column",
-                                "format": "{:.5f}",
-                                "scale": colors[i % len(colors)],
-                            }
-
-            except Exception as e:
-                log.error(f"[TestModule] Failed to read {filepath}: {e}")
-                continue
+        metrics_dict = {}
+        self._parse_input_files(matched_csv_files, metrics_dict)
 
         if not self.data:
             log.warning("[TestModule] No data rows found to display.")
             return
 
-        # Add general stats table
+        table_headers = self._build_table_headers(metrics_dict)
         self.general_stats_addcols(self.data, headers=table_headers)
 
-        grouped_keys = []
+        grouped_keys, gc_metrics, family_metrics, family_size_metrics = (
+            self._build_metric_groups(metrics_dict)
+        )
+        self._add_metric_sections(
+            metrics_dict, grouped_keys, gc_metrics, family_metrics, family_size_metrics
+        )
 
+    def _parse_input_files(self, matched_csv_files, metrics_dict):
+        """Parse all matched CSV files into module data structures."""
+        for f in matched_csv_files:
+            filepath = os.path.join(f["root"], f["fn"])
+            log.warning(f"[TestModule] Processing file: {f['fn']}")
+            log.info(f"[TestModule] Processing file: {filepath}")
+            self._parse_single_file(filepath, metrics_dict)
+
+    def _parse_single_file(self, filepath, metrics_dict):
+        """Parse one CSV file and merge rows into metric dictionaries."""
+        try:
+            with open(filepath, "r") as handle:
+                reader = csv.DictReader(handle, delimiter=",")
+                for row in reader:
+                    self._process_row(row, metrics_dict)
+        except Exception as e:
+            log.error(f"[TestModule] Failed to read {filepath}: {e}")
+
+    def _process_row(self, row, metrics_dict):
+        """Validate and ingest a single CSV row into in-memory metrics."""
+        sample = row.get("sample")
+        metric = row.get("metric")
+        value = row.get("value")
+
+        if not sample or not metric or value is None:
+            log.warning(f"Missing required field in row: {row}")
+            return
+
+        try:
+            value = float(value)
+        except ValueError:
+            log.warning(
+                f"Non-numeric value for sample '{sample}' metric '{metric}': {value}"
+            )
+            return
+
+        if sample not in self.data:
+            self.data[sample] = {}
+        self.data[sample][metric] = value
+
+        if metric not in metrics_dict:
+            metrics_dict[metric] = {}
+        metrics_dict[metric][sample] = value
+
+    def _build_table_headers(self, metrics_dict):
+        """Build MultiQC general-stats header metadata for parsed metrics."""
+        table_headers = {}
+        colors = ["PuBu", "BuPu", "BuGn", "Oranges", "RdPu"]
+        if metrics_dict:
+            for i, metric in enumerate(metrics_dict):
+                table_headers[metric] = {
+                    "title": metric,
+                    "description": f"{metric} column",
+                    "format": "{:.5f}",
+                    "scale": colors[i % len(colors)],
+                }
+        return table_headers
+
+    def _build_metric_groups(self, metrics_dict):
+        """Split metrics into grouped collections used for combined plots."""
+        grouped_keys = []
         gc_metrics = {}
+        family_metrics = {}
+        family_size_metrics = {}
+
         for k, v in metrics_dict.items():
             if k in ["gc_single", "gc_both"]:
                 grouped_keys.append(k)
                 gc_metrics[k] = v
-
-        family_metrics = {}
 
         for k, v in metrics_dict.items():
             if k in ["family_max", "family_median", "family_mean", "single_families"]:
                 family_metrics[k] = v
                 grouped_keys.append(k)
 
-        family_size_metrics = {}
         for k, v in metrics_dict.items():
             if k in [
                 "families_gt1",
@@ -112,6 +125,17 @@ class MultiqcModule(BaseMultiqcModule):
                 family_size_metrics[k] = v
                 grouped_keys.append(k)
 
+        return grouped_keys, gc_metrics, family_metrics, family_size_metrics
+
+    def _add_metric_sections(
+        self,
+        metrics_dict,
+        grouped_keys,
+        gc_metrics,
+        family_metrics,
+        family_size_metrics,
+    ):
+        """Add individual and grouped plot sections to the MultiQC report."""
         # Define metric-to-plot function mapping
         metric_plot_mapping = {
             "Efficiency": self.plot_bargraph,
@@ -131,14 +155,12 @@ class MultiqcModule(BaseMultiqcModule):
             # Add more mappings here
         }
 
-        # plot section for each metric
         for metric, sample_values in metrics_dict.items():
             if metric not in grouped_keys:
                 plot_func = metric_plot_mapping.get(
                     metric, self.plot_bargraph
                 )  # default = bar
                 plot_config = plot_func(sample_values, metric)
-
                 self.add_section(
                     name=f"{metric}",
                     anchor=f"test_module_{metric.lower()}_plot",
@@ -146,7 +168,6 @@ class MultiqcModule(BaseMultiqcModule):
                     plot=plot_config,
                 )
 
-        # plot gc section
         if gc_metrics:
             self.add_section(
                 name="GC Metrics",
@@ -172,6 +193,7 @@ class MultiqcModule(BaseMultiqcModule):
             )
 
     def plot_bargraph(self, data_dict, metric):
+        """Create a single-metric bargraph configuration."""
 
         data = [{sample: {metric: value} for sample, value in data_dict.items()}]
 
@@ -191,9 +213,7 @@ class MultiqcModule(BaseMultiqcModule):
         return bargraph.plot(data, cats, pconfig=pconfig)
 
     def plot_grouped_bargraph(self, metric_dict, metric_title):
-        """
-        metric_dict format: {'gc_single': {'S1': 10}, 'gc_both': {'S1': 20}}
-        """
+        """Create a grouped bargraph from metric-to-sample mappings."""
         plot_data = {}
 
         # 1. Re-structure the data
@@ -218,9 +238,7 @@ class MultiqcModule(BaseMultiqcModule):
         return bargraph.plot(plot_data, pconfig=pconfig)
 
     def plot_family_metrics(self, metric_dict, metric_title):
-        """
-        Creates a group bar graph starting with single_families at the bottom.
-        """
+        """Create the family metrics grouped bargraph with a fixed order."""
         plot_data = {}
 
         # 1. Re-structure the data for bargraph.plot
