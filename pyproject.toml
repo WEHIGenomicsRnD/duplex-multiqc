@@ -4,24 +4,35 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "duplex_multiqc"
-version = "0.1"
-description = "A MultiQC plugin for parsing TestModule logs"
+version = "0.1.0"
+description = "A MultiQC plugin for parsing and visualising duplex sequencing QC metrics"
 dependencies = [
-    "multiqc", 
-    "pyyaml"
+    "multiqc==1.14",
+    "pip>=25.0.1",
+    "setuptools<82",
 ]
 requires-python = ">=3.8"
 readme = "README.md"
 keywords = ["bioinformatics", "biology", "sequencing", "NGS", "next generation sequencing", "quality control", "duplex sequencing"]
 
+[dependency-groups]
+dev = [
+    "pyright>=1.1.409",
+    "pytest>=7",
+    "ruff>=0.15.12",
+]
+
 [tool.setuptools]
-packages = [ "duplex_multiqc",
+packages = [
+  "duplex_multiqc",
   "duplex_multiqc.modules",
-  "duplex_multiqc.modules.test_module"]
+  "duplex_multiqc.modules.duplex_seq",
+]
 
 [project.entry-points."multiqc.modules.v1"]
-test_module = "duplex_multiqc.modules.test_module:MultiqcModule"
+duplex_seq = "duplex_multiqc.modules.duplex_seq:MultiqcModule"
 
 [project.entry-points."multiqc.hooks.v1"]
 execution_start = "duplex_multiqc.custom_code:execute"
+
 

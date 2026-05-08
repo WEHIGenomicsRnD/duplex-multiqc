@@ -3,39 +3,45 @@
 This file defines hooks and utility functions for the MultiQC plugin.
 """
 
-from __future__ import print_function
 import logging
-from multiqc.utils import config, report
-import importlib_metadata
+import importlib.metadata
+from multiqc.utils import config
 
-# Initialising main MultiQC logger
-log = logging.getLogger('multiqc')
+log = logging.getLogger("multiqc")
+
 
 def execute():
     """
     Code to execute after the config files have been parsed.
     """
-    log.info("Running execute() from custom MultiQC plugin")
+    log.info("Running execute() from duplex_multiqc plugin")
 
-    # Plugin's version number defined in pyproject.toml:
-    version = importlib_metadata.version("duplex_multiqc")
+    version = importlib.metadata.version("duplex_multiqc")
     log.info("Running MultiQC Plugin v{}".format(version))
+
     search_patterns = {
-            'test_module': {
-                'fn': '*.csv',
-                'contents' : "sample,metric,value",
-                'num_lines': 1
-            }
-        }
-    # Add a custom search pattern for 'test_module' if it doesn't already exist
-    # Add to the search patterns used by modules
+        "duplex_seq": [
+            {
+                "fn": "*.csv",
+                "contents": "sample,metric,value",
+                "num_lines": 1,
+            },
+            {
+                "fn": "*.tsv",
+                "contents": "sample\tmetric\tvalue",
+                "num_lines": 1,
+            },
+        ]
+    }
+
     for pattern_name, pattern in search_patterns.items():
         if pattern_name not in config.sp:
-            config.update_dict( config.sp, { pattern_name: pattern } )
+            config.update_dict(config.sp, {pattern_name: pattern})
             log.debug("Added {} to the search patterns".format(pattern_name))
         else:
-            log.debug("Not adding {} to the search patterns as it is already set".format(pattern_name))
-    
-    # Some additional filename cleaning
-    config.fn_clean_exts.extend([".my_tool_extension", ".removeMetoo"])
-    
+            log.debug(
+                "Not adding {} to the search patterns as it is already set".format(
+                    pattern_name
+                )
+            )
+
