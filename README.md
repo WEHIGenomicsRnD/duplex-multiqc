@@ -1,6 +1,12 @@
 # duplex-multiqc
 
-A [MultiQC](https://multiqc.info/) plugin for parsing and visualising duplex sequencing QC metrics. It reads per-sample, per-metric tabular data (CSV or TSV) and generates interactive bar plots in your MultiQC report.
+A [MultiQC](https://multiqc.info/) plugin for parsing and visualising duplex
+sequencing QC metrics. It reads per-sample, per-metric tabular data (CSV or
+TSV) and generates interactive bar plots in your MultiQC report. The pipeline
+works on output from the
+[calculate-duplex-metrics](https://github.com/WEHIGenomicsRnD/calculate-duplex-metrics)
+tool that has been integrated into the WEHI Genomics R&D
+[duplex-seq-pipeline](https://github.com/WEHIGenomicsRnD/duplex-seq-pipeline).
 
 ---
 
@@ -11,8 +17,9 @@ A [MultiQC](https://multiqc.info/) plugin for parsing and visualising duplex seq
 - Dynamically generates per-metric bar plots
 - Groups related metrics into combined plots:
   - **GC Metrics** — `gc_single`, `gc_both`
-  - **Family Metrics** — `family_mean`, `family_median`, `family_max`, `single_families`
-  - **Family Size Metrics** — `families_gt1`, `single_families`, `paired_families`, `paired_and_gt1`
+  - **Within-family stats** — `family_max`, `family_median`, `family_mean`
+  - **Family size comparison** — `families_gt1`, `single_families`,
+    `paired_families`, `paired_and_gt1`, `total_families`
 - Adds all metrics to the MultiQC general statistics table
 
 ---
@@ -60,7 +67,9 @@ pip install .
 
 ## Input Format
 
-The plugin matches files named `*.csv` or `*.tsv` whose first line contains the headers `sample,metric,value` (CSV) or `sample\tmetric\tvalue` (TSV). Column names are **case-insensitive**.
+The plugin matches files named `*.csv` or `*.tsv` whose first line contains the
+headers `sample,metric,value` (CSV) or `sample\tmetric\tvalue` (TSV). Column
+names are **case-insensitive**.
 
 ### CSV example
 
@@ -85,7 +94,6 @@ SampleA	drop_out_rate	0.192
 |---|---|
 | `efficiency` | Duplex efficiency |
 | `drop_out_rate` | Read drop-out rate |
-| `frac_singletons` | Fraction of singleton reads |
 | `gc_single` | GC content (single-strand families) |
 | `gc_both` | GC content (duplex families) |
 | `gc_deviation` | GC deviation between strands |
@@ -97,6 +105,7 @@ SampleA	drop_out_rate	0.192
 | `single_families` | Single-read families |
 | `paired_families` | Paired families |
 | `paired_and_gt1` | Paired families with more than one read |
+| `frac_singletons` | Fraction of singleton reads |
 
 Any additional metrics present in the input files will be plotted as individual bar charts.
 
@@ -115,7 +124,8 @@ multiqc --force path/to/input/
 multiqc -v path/to/input/
 ```
 
-The report is written to `multiqc_report.html` in the current directory. Additional data files are saved in `multiqc_data/`.
+The report is written to `multiqc_report.html` in the current directory.
+Additional data files are saved in `multiqc_data/`.
 
 ---
 
@@ -156,4 +166,3 @@ pyproject.toml
 3. Make your changes and add tests in `tests/test_plugin.py`.
 4. Run `uv run pytest tests/` and ensure all tests pass.
 5. Open a pull request against `main`.
-

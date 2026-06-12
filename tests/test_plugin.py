@@ -78,5 +78,6 @@ def test_grouped_section_anchors_are_unique(tmp_path):
     anchors = [s["anchor"] for s in module.sections]
     assert len(anchors) == len(set(anchors))
     assert "duplex_seq_gc_metrics" in anchors
-    assert "duplex_seq_family_metrics" in anchors
-    assert "duplex_seq_family_size_metrics" in anchors
+    assert "duplex_seq_within_family_stats" in anchors
+    assert "duplex_seq_family_size_comparison" in anchors
+    assert anchors[-1] == "duplex_seq_frac_singletons_plot"

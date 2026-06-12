@@ -10,9 +10,16 @@ log = logging.getLogger(__name__)
 
 # Metrics that are grouped into combined plots rather than individual plots
 _GC_METRICS = {"gc_single", "gc_both", "gc_deviation"}
-_FAMILY_METRICS = {"family_max", "family_median", "family_mean", "single_families", "total_families"}
-_FAMILY_SIZE_METRICS = {"families_gt1", "single_families", "paired_families", "paired_and_gt1"}
-_GROUPED_METRICS = _GC_METRICS | _FAMILY_METRICS | _FAMILY_SIZE_METRICS
+_SINGLETON_FRAC_METRICS = {"frac_singletons"}
+_WITHIN_FAMILY_STATS = {"family_max", "family_median", "family_mean"}
+_FAMILY_SIZE_METRICS = {
+    "families_gt1",
+    "single_families",
+    "paired_families",
+    "paired_and_gt1",
+    "total_families",
+}
+_GROUPED_METRICS = _GC_METRICS | _WITHIN_FAMILY_STATS | _FAMILY_SIZE_METRICS
 
 _TABLE_COLORS = ["PuBu", "BuPu", "BuGn", "Oranges", "RdPu"]
 _METRIC_LABELS = {
@@ -140,7 +147,7 @@ class MultiqcModule(BaseMultiqcModule):
 
         # --- Individual metric sections ---
         for metric, sample_values in metrics_dict.items():
-            if metric not in _GROUPED_METRICS:
+            if metric not in _GROUPED_METRICS and metric not in _SINGLETON_FRAC_METRICS:
                 self.add_section(
                     name=_metric_label(metric),
                     anchor=f"duplex_seq_{metric.lower()}_plot",
@@ -158,24 +165,34 @@ class MultiqcModule(BaseMultiqcModule):
                 plot=self.plot_grouped_bargraph(gc_metrics, "GC"),
             )
 
-        # --- Grouped family section ---
-        family_metrics = {k: v for k, v in metrics_dict.items() if k in _FAMILY_METRICS}
-        if family_metrics:
+        # --- Within-family stats section ---
+        within_family_stats = {k: v for k, v in metrics_dict.items() if k in _WITHIN_FAMILY_STATS}
+        if within_family_stats:
             self.add_section(
-                name="Family Metrics",
-                anchor="duplex_seq_family_metrics",
-                description="Family size metrics per sample",
-                plot=self.plot_family_metrics(family_metrics, "family"),
+                name="Within-family stats",
+                anchor="duplex_seq_within_family_stats",
+                description="Within-family statistics per sample",
+                plot=self.plot_family_metrics(within_family_stats, "Within-family stats"),
             )
 
         # --- Grouped family size section ---
         family_size_metrics = {k: v for k, v in metrics_dict.items() if k in _FAMILY_SIZE_METRICS}
         if family_size_metrics:
             self.add_section(
-                name="Family Size Metrics",
-                anchor="duplex_seq_family_size_metrics",
-                description="Grouped family size metrics per sample",
-                plot=self.plot_grouped_bargraph(family_size_metrics, "size"),
+                name="Family size comparison",
+                anchor="duplex_seq_family_size_comparison",
+                description="Comparison of family size metrics per sample",
+                plot=self.plot_grouped_bargraph(family_size_metrics, "Family size"),
+            )
+
+        # --- Singleton fraction metric section ---
+        singleton_frac_metrics = {k: v for k, v in metrics_dict.items() if k in _SINGLETON_FRAC_METRICS}
+        for metric, sample_values in singleton_frac_metrics.items():
+            self.add_section(
+                name=_metric_label(metric),
+                anchor=f"duplex_seq_{metric.lower()}_plot",
+                description=f"Plot for metric: {_metric_label(metric)}",
+                plot=self.plot_bargraph(sample_values, metric),
             )
 
     def plot_bargraph(self, data_dict, metric):
@@ -204,9 +221,10 @@ class MultiqcModule(BaseMultiqcModule):
                 plot_data[sample_name][metric_name] = val
 
         cats = _build_cats(metric_dict.keys())
+        plot_slug = metric_title.lower().replace(" ", "_").replace("-", "_")
 
         pconfig = {
-            "id": f"duplex_seq_{metric_title.lower()}_grouped_plot",
+            "id": f"duplex_seq_{plot_slug}_grouped_plot",
             "title": f"{metric_title} Comparison",
             "ylab": "Value",
             "tt_decimals": 6,
@@ -224,20 +242,19 @@ class MultiqcModule(BaseMultiqcModule):
                     plot_data[sample_name] = {}
                 plot_data[sample_name][metric_name] = val
 
-        priority_order = ["single_families", "family_max", "family_mean", "family_median"]
+        priority_order = ["family_max", "family_median", "family_mean"]
         ordered_metrics = [m for m in priority_order if m in metric_dict]
         ordered_metrics.extend([m for m in metric_dict if m not in ordered_metrics])
         cats = _build_cats(ordered_metrics)
 
+        plot_slug = metric_title.lower().replace(" ", "_").replace("-", "_")
         pconfig = {
-            "id": f"duplex_seq_{metric_title.lower()}_stacked_bar",
-            "title": f"{metric_title} Metrics Stacked",
+            "id": f"duplex_seq_{plot_slug}_stacked_bar",
+            "title": metric_title,
             "xlab": "Samples",
-            "ylab": "Family Size",
+            "ylab": "Value",
             "stacking": None,
             "tt_decimals": 6,
-            "cpswitch": True,
-            "logswitch": True,
-            "logswitch_active": True,
+            "cpswitch": False,
         }
         return bargraph.plot(plot_data, cats, pconfig=pconfig)
