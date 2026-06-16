@@ -81,3 +81,25 @@ def test_grouped_section_anchors_are_unique(tmp_path):
     assert "duplex_seq_within_family_stats" in anchors
     assert "duplex_seq_family_size_comparison" in anchors
     assert anchors[-1] == "duplex_seq_frac_singletons_plot"
+
+
+def test_groups_on_target_rate_raw_and_duplex(tmp_path):
+    on_target_csv = tmp_path / "on_target_rates.csv"
+    on_target_csv.write_text(
+        "\n".join(
+            [
+                "sample,metric,value",
+                "SampleA,efficiency,0.1",
+                "SampleA,drop_out_rate,0.2",
+                "SampleA,on_target_rate_raw,0.3",
+                "SampleA,on_target_rate_duplex,0.4",
+            ]
+        )
+    )
+
+    module = _run_module_on_dir(tmp_path)
+
+    anchors = [s["anchor"] for s in module.sections]
+    assert "duplex_seq_on_target_rate" in anchors
+    assert "duplex_seq_on_target_rate_raw_plot" not in anchors
+    assert "duplex_seq_on_target_rate_duplex_plot" not in anchors

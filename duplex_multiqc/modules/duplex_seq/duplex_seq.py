@@ -10,6 +10,7 @@ log = logging.getLogger(__name__)
 
 # Metrics that are grouped into combined plots rather than individual plots
 _GC_METRICS = {"gc_single", "gc_both", "gc_deviation"}
+_ON_TARGET_RATE_METRICS = {"on_target_rate_raw", "on_target_rate_duplex"}
 _SINGLETON_FRAC_METRICS = {"frac_singletons"}
 _WITHIN_FAMILY_STATS = {"family_max", "family_median", "family_mean"}
 _FAMILY_SIZE_METRICS = {
@@ -19,12 +20,17 @@ _FAMILY_SIZE_METRICS = {
     "paired_and_gt1",
     "total_families",
 }
-_GROUPED_METRICS = _GC_METRICS | _WITHIN_FAMILY_STATS | _FAMILY_SIZE_METRICS
+_GROUPED_METRICS = _GC_METRICS | _ON_TARGET_RATE_METRICS | _WITHIN_FAMILY_STATS | _FAMILY_SIZE_METRICS
+
+# Preferred display order for individual (non-grouped) metrics
+_INDIVIDUAL_METRIC_ORDER = ["efficiency", "drop_out_rate"]
 
 _TABLE_COLORS = ["PuBu", "BuPu", "BuGn", "Oranges", "RdPu"]
 _METRIC_LABELS = {
     "efficiency": "Efficiency",
     "drop_out_rate": "Drop Out Rate",
+    "on_target_rate_raw": "On Target Raw",
+    "on_target_rate_duplex": "On Target Duplex",
     "frac_singletons": "Frac Singletons",
     "gc_single": "GC Single",
     "gc_both": "GC Both",
@@ -146,14 +152,30 @@ class MultiqcModule(BaseMultiqcModule):
         self.general_stats_addcols(self.sample_data, headers=table_headers)
 
         # --- Individual metric sections ---
-        for metric, sample_values in metrics_dict.items():
-            if metric not in _GROUPED_METRICS and metric not in _SINGLETON_FRAC_METRICS:
-                self.add_section(
-                    name=_metric_label(metric),
-                    anchor=f"duplex_seq_{metric.lower()}_plot",
-                    description=f"Plot for metric: {_metric_label(metric)}",
-                    plot=self.plot_bargraph(sample_values, metric),
-                )
+        # Render known metrics in preferred order first, then any remaining unknowns.
+        individual_metrics = {
+            k: v for k, v in metrics_dict.items()
+            if k not in _GROUPED_METRICS and k not in _SINGLETON_FRAC_METRICS
+        }
+        ordered = [m for m in _INDIVIDUAL_METRIC_ORDER if m in individual_metrics]
+        ordered += [m for m in individual_metrics if m not in _INDIVIDUAL_METRIC_ORDER]
+        for metric in ordered:
+            self.add_section(
+                name=_metric_label(metric),
+                anchor=f"duplex_seq_{metric.lower()}_plot",
+                description=f"Plot for metric: {_metric_label(metric)}",
+                plot=self.plot_single_bargraph(individual_metrics[metric], metric),
+            )
+
+        # --- Grouped on-target rate section ---
+        on_target_rate_metrics = {k: v for k, v in metrics_dict.items() if k in _ON_TARGET_RATE_METRICS}
+        if on_target_rate_metrics:
+            self.add_section(
+                name="On-target Rate",
+                anchor="duplex_seq_on_target_rate",
+                description="On-target rate per sample (raw and duplex)",
+                plot=self.plot_grouped_bargraph(on_target_rate_metrics, "On-target Rate"),
+            )
 
         # --- Grouped GC section ---
         gc_metrics = {k: v for k, v in metrics_dict.items() if k in _GC_METRICS}
@@ -192,10 +214,10 @@ class MultiqcModule(BaseMultiqcModule):
                 name=_metric_label(metric),
                 anchor=f"duplex_seq_{metric.lower()}_plot",
                 description=f"Plot for metric: {_metric_label(metric)}",
-                plot=self.plot_bargraph(sample_values, metric),
+                plot=self.plot_single_bargraph(sample_values, metric),
             )
 
-    def plot_bargraph(self, data_dict, metric):
+    def plot_single_bargraph(self, data_dict, metric):
         data = [{sample: {metric: value} for sample, value in data_dict.items()}]
         cats = _build_cats([metric])
         pconfig = {
@@ -211,7 +233,7 @@ class MultiqcModule(BaseMultiqcModule):
 
     def plot_grouped_bargraph(self, metric_dict, metric_title):
         """
-        metric_dict format: {'gc_single': {'S1': 10}, 'gc_both': {'S1': 20}}
+        metric_dict format: {'group1': {'S1': 10}, 'group2': {'S1': 20}}
         """
         plot_data = {}
         for metric_name, samples in metric_dict.items():
@@ -225,7 +247,7 @@ class MultiqcModule(BaseMultiqcModule):
 
         pconfig = {
             "id": f"duplex_seq_{plot_slug}_grouped_plot",
-            "title": f"{metric_title} Comparison",
+            "title": f"{metric_title}",
             "ylab": "Value",
             "tt_decimals": 6,
             "stacking": None,

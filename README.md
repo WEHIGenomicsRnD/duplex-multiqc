@@ -16,6 +16,7 @@ tool that has been integrated into the WEHI Genomics R&D
 - Column headers are case-insensitive (`Sample` and `sample` both work)
 - Dynamically generates per-metric bar plots
 - Groups related metrics into combined plots:
+  - **On-target rate** — `on_target_rate_raw`, `on_target_rate_duplex`
   - **GC Metrics** — `gc_single`, `gc_both`
   - **Within-family stats** — `family_max`, `family_median`, `family_mean`
   - **Family size comparison** — `families_gt1`, `single_families`,
@@ -94,6 +95,8 @@ SampleA	drop_out_rate	0.192
 |---|---|
 | `efficiency` | Duplex efficiency |
 | `drop_out_rate` | Read drop-out rate |
+| `on_target_rate_raw` | Fraction of reads on target before duplex filtering (optional) |
+| `on_target_rate_duplex` | Fraction of reads on target after duplex filtering (optional) |
 | `gc_single` | GC content (single-strand families) |
 | `gc_both` | GC content (duplex families) |
 | `gc_deviation` | GC deviation between strands |
