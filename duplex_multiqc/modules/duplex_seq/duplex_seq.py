@@ -11,6 +11,8 @@ log = logging.getLogger(__name__)
 # Metrics that are grouped into combined plots rather than individual plots
 _GC_METRICS = {"gc_single", "gc_both", "gc_deviation"}
 _ON_TARGET_RATE_METRICS = {"on_target_rate_raw", "on_target_rate_duplex"}
+_ON_TARGET_COVERAGE_METRICS = {"on_target_coverage_raw", "on_target_coverage_duplex"}
+_ON_TARGET_RATIO_METRICS = {"on_target_duplex_ratio"}
 _SINGLETON_FRAC_METRICS = {"frac_singletons"}
 _WITHIN_FAMILY_STATS = {"family_max", "family_median", "family_mean"}
 _FAMILY_SIZE_METRICS = {
@@ -20,7 +22,7 @@ _FAMILY_SIZE_METRICS = {
     "paired_and_gt1",
     "total_families",
 }
-_GROUPED_METRICS = _GC_METRICS | _ON_TARGET_RATE_METRICS | _WITHIN_FAMILY_STATS | _FAMILY_SIZE_METRICS
+_GROUPED_METRICS = _GC_METRICS | _ON_TARGET_RATE_METRICS | _ON_TARGET_COVERAGE_METRICS | _WITHIN_FAMILY_STATS | _FAMILY_SIZE_METRICS
 
 # Preferred display order for individual (non-grouped) metrics
 _INDIVIDUAL_METRIC_ORDER = ["efficiency", "drop_out_rate"]
@@ -31,6 +33,9 @@ _METRIC_LABELS = {
     "drop_out_rate": "Drop Out Rate",
     "on_target_rate_raw": "On Target Raw",
     "on_target_rate_duplex": "On Target Duplex",
+    "on_target_coverage_raw": "On Target Coverage Raw",
+    "on_target_coverage_duplex": "On Target Coverage Duplex",
+    "on_target_duplex_ratio": "On Target Duplex Ratio",
     "frac_singletons": "Frac Singletons",
     "gc_single": "GC Single",
     "gc_both": "GC Both",
@@ -155,7 +160,7 @@ class MultiqcModule(BaseMultiqcModule):
         # Render known metrics in preferred order first, then any remaining unknowns.
         individual_metrics = {
             k: v for k, v in metrics_dict.items()
-            if k not in _GROUPED_METRICS and k not in _SINGLETON_FRAC_METRICS
+            if k not in _GROUPED_METRICS and k not in _SINGLETON_FRAC_METRICS and k not in _ON_TARGET_RATIO_METRICS
         }
         ordered = [m for m in _INDIVIDUAL_METRIC_ORDER if m in individual_metrics]
         ordered += [m for m in individual_metrics if m not in _INDIVIDUAL_METRIC_ORDER]
@@ -175,6 +180,26 @@ class MultiqcModule(BaseMultiqcModule):
                 anchor="duplex_seq_on_target_rate",
                 description="On-target rate per sample (raw and duplex)",
                 plot=self.plot_grouped_bargraph(on_target_rate_metrics, "On-target Rate"),
+            )
+
+        # --- Grouped on-target coverage section ---
+        on_target_coverage_metrics = {k: v for k, v in metrics_dict.items() if k in _ON_TARGET_COVERAGE_METRICS}
+        if on_target_coverage_metrics:
+            self.add_section(
+                name="On-target Coverage",
+                anchor="duplex_seq_on_target_coverage",
+                description="On-target coverage per sample (raw and duplex)",
+                plot=self.plot_grouped_bargraph(on_target_coverage_metrics, "On-target Coverage"),
+            )
+
+        # --- On-target duplex ratio metric section ---
+        on_target_ratio_metrics = {k: v for k, v in metrics_dict.items() if k in _ON_TARGET_RATIO_METRICS}
+        for metric, sample_values in on_target_ratio_metrics.items():
+            self.add_section(
+                name=_metric_label(metric),
+                anchor=f"duplex_seq_{metric.lower()}_plot",
+                description=f"Plot for metric: {_metric_label(metric)}",
+                plot=self.plot_single_bargraph(sample_values, metric),
             )
 
         # --- Grouped GC section ---

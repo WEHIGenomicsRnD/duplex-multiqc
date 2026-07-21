@@ -97,6 +97,9 @@ SampleA	drop_out_rate	0.192
 | `drop_out_rate` | Read drop-out rate |
 | `on_target_rate_raw` | Fraction of reads on target before duplex filtering (optional) |
 | `on_target_rate_duplex` | Fraction of reads on target after duplex filtering (optional) |
+| `on_target_coverage_raw` | On-target coverage before duplex filtering (optional) |
+| `on_target_coverage_duplex` | On-target coverage after duplex filtering (optional) |
+| `on_target_duplex_ratio` | Raw-to-duplex on-target coverage ratio (optional) |
 | `gc_single` | GC content (single-strand families) |
 | `gc_both` | GC content (duplex families) |
 | `gc_deviation` | GC deviation between strands |

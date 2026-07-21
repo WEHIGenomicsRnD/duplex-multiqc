@@ -77,6 +77,9 @@ def test_grouped_section_anchors_are_unique(tmp_path):
 
     anchors = [s["anchor"] for s in module.sections]
     assert len(anchors) == len(set(anchors))
+    assert "duplex_seq_on_target_rate" in anchors
+    assert "duplex_seq_on_target_coverage" in anchors
+    assert "duplex_seq_on_target_duplex_ratio_plot" in anchors
     assert "duplex_seq_gc_metrics" in anchors
     assert "duplex_seq_within_family_stats" in anchors
     assert "duplex_seq_family_size_comparison" in anchors
@@ -103,3 +106,25 @@ def test_groups_on_target_rate_raw_and_duplex(tmp_path):
     assert "duplex_seq_on_target_rate" in anchors
     assert "duplex_seq_on_target_rate_raw_plot" not in anchors
     assert "duplex_seq_on_target_rate_duplex_plot" not in anchors
+
+
+def test_groups_on_target_coverage_and_plots_ratio(tmp_path):
+    on_target_csv = tmp_path / "on_target_coverage.csv"
+    on_target_csv.write_text(
+        "\n".join(
+            [
+                "sample,metric,value",
+                "SampleA,on_target_coverage_raw,176636.497683199",
+                "SampleA,on_target_coverage_duplex,4147.76941198496",
+                "SampleA,on_target_duplex_ratio,42.5859010322051",
+            ]
+        )
+    )
+
+    module = _run_module_on_dir(tmp_path)
+
+    anchors = [s["anchor"] for s in module.sections]
+    assert "duplex_seq_on_target_coverage" in anchors
+    assert "duplex_seq_on_target_coverage_raw_plot" not in anchors
+    assert "duplex_seq_on_target_coverage_duplex_plot" not in anchors
+    assert "duplex_seq_on_target_duplex_ratio_plot" in anchors

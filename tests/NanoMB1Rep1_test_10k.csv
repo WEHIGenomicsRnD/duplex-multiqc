@@ -2,6 +2,11 @@ sample,metric,value
 NanoMB1Rep1_test_10k,frac_singletons,0.0215912879208801
 NanoMB1Rep1_test_10k,efficiency,0.0547748866871889
 NanoMB1Rep1_test_10k,drop_out_rate,0.192157850216269
+NanoMB1Rep1_test_10k,on_target_rate_raw,0.679747827378827
+NanoMB1Rep1_test_10k,on_target_rate_duplex,0.873758859265738
+NanoMB1Rep1_test_10k,on_target_coverage_raw,176636.497683199
+NanoMB1Rep1_test_10k,on_target_coverage_duplex,4147.76941198496
+NanoMB1Rep1_test_10k,on_target_duplex_ratio,42.5859010322051
 NanoMB1Rep1_test_10k,gc_single,0.540830487065767
 NanoMB1Rep1_test_10k,gc_both,0.541319354452146
 NanoMB1Rep1_test_10k,gc_deviation,0.000488867386378322
