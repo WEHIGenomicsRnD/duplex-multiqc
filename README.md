@@ -27,8 +27,8 @@ tool that has been integrated into the WEHI Genomics R&D
 
 ## Requirements
 
-- Python ≥ 3.8
-- MultiQC == 1.14
+- Python ≥ 3.10
+- MultiQC == 1.35
 
 ---
 
@@ -157,8 +157,7 @@ duplex_multiqc/
       duplex_seq.py           # Main module: parsing and plot generation
       __init__.py
 tests/
-  test.csv                    # Sample test fixture (CSV, lowercase headers)
-  sampledata.tsv              # Sample test fixture (TSV, uppercase headers)
+  *_test_10k.csv              # Sample test fixtures (CSV)
   test_plugin.py              # pytest test suite
 pyproject.toml
 ```

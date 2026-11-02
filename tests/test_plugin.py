@@ -1,39 +1,17 @@
 import shutil
 from pathlib import Path
-from unittest.mock import patch
 
-import pkg_resources
+import multiqc
 import pytest
+from multiqc import report
 
 
 def _run_module_on_dir(data_dir: Path):
     """Run the duplex_seq module with MultiQC file discovery on a temp directory."""
-    original_iter_entry_points = pkg_resources.iter_entry_points
-
-    def _iter_entry_points_without_hooks(group, *args, **kwargs):
-        # Keep MultiQC core entry points, but disable external hook loading in tests.
-        # This avoids unrelated stale hook entry points breaking test imports.
-        if group == "multiqc.hooks.v1":
-            return iter(())
-        return original_iter_entry_points(group, *args, **kwargs)
-
-    with patch.object(pkg_resources, "iter_entry_points", side_effect=_iter_entry_points_without_hooks):
-        from multiqc.utils import config, report
-        from duplex_multiqc.modules.duplex_seq.duplex_seq import MultiqcModule
-
-        report.init()
-        config.analysis_dir = [str(data_dir)]
-        config.output_dir = str(data_dir)
-        config.sp = {
-            "duplex_seq": [
-                {"fn": "*.csv"},
-                {"fn": "*.tsv"},
-            ]
-        }
-
-        report.get_filelist(["duplex_seq"])
-        module = MultiqcModule()
-        return module
+    multiqc.reset()
+    multiqc.parse_logs(str(data_dir), run_modules=["duplex_seq"], quiet=True)
+    assert len(report.modules) == 1
+    return report.modules[0]
 
 
 def test_parses_two_sample_csv_files(tmp_path):
@@ -43,10 +21,10 @@ def test_parses_two_sample_csv_files(tmp_path):
 
     module = _run_module_on_dir(tmp_path)
 
-    assert "NanoMB1Rep1_test_10k" in module.sample_data
-    assert "NanoMB2Rep1_test_10k" in module.sample_data
-    assert module.sample_data["NanoMB1Rep1_test_10k"]["efficiency"] == pytest.approx(0.0547748866871889)
-    assert module.sample_data["NanoMB2Rep1_test_10k"]["efficiency"] == pytest.approx(0.0512334521098765)
+    assert "NanoMB1Rep1_test_10k" in module._sample_data
+    assert "NanoMB2Rep1_test_10k" in module._sample_data
+    assert module._sample_data["NanoMB1Rep1_test_10k"]["efficiency"] == pytest.approx(0.0547748866871889)
+    assert module._sample_data["NanoMB2Rep1_test_10k"]["efficiency"] == pytest.approx(0.0512334521098765)
 
 
 def test_parses_uppercase_headers(tmp_path):
@@ -63,9 +41,9 @@ def test_parses_uppercase_headers(tmp_path):
 
     module = _run_module_on_dir(tmp_path)
 
-    assert "UpperSample" in module.sample_data
-    assert module.sample_data["UpperSample"]["Efficiency"] == pytest.approx(0.1)
-    assert module.sample_data["UpperSample"]["drop_out_rate"] == pytest.approx(0.2)
+    assert "UpperSample" in module._sample_data
+    assert module._sample_data["UpperSample"]["Efficiency"] == pytest.approx(0.1)
+    assert module._sample_data["UpperSample"]["drop_out_rate"] == pytest.approx(0.2)
 
 
 def test_grouped_section_anchors_are_unique(tmp_path):
@@ -75,7 +53,7 @@ def test_grouped_section_anchors_are_unique(tmp_path):
 
     module = _run_module_on_dir(tmp_path)
 
-    anchors = [s["anchor"] for s in module.sections]
+    anchors = [str(s.anchor) for s in module.sections]
     assert len(anchors) == len(set(anchors))
     assert "duplex_seq_on_target_rate" in anchors
     assert "duplex_seq_on_target_coverage" in anchors
@@ -102,7 +80,7 @@ def test_groups_on_target_rate_raw_and_duplex(tmp_path):
 
     module = _run_module_on_dir(tmp_path)
 
-    anchors = [s["anchor"] for s in module.sections]
+    anchors = [str(s.anchor) for s in module.sections]
     assert "duplex_seq_on_target_rate" in anchors
     assert "duplex_seq_on_target_rate_raw_plot" not in anchors
     assert "duplex_seq_on_target_rate_duplex_plot" not in anchors
@@ -123,7 +101,7 @@ def test_groups_on_target_coverage_and_plots_ratio(tmp_path):
 
     module = _run_module_on_dir(tmp_path)
 
-    anchors = [s["anchor"] for s in module.sections]
+    anchors = [str(s.anchor) for s in module.sections]
     assert "duplex_seq_on_target_coverage" in anchors
     assert "duplex_seq_on_target_coverage_raw_plot" not in anchors
     assert "duplex_seq_on_target_coverage_duplex_plot" not in anchors
