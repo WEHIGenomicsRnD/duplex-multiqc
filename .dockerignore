@@ -1,0 +1,11 @@
+.git
+.venv
+.github
+build
+*.egg-info
+.pytest_cache
+.ruff_cache
+.ropeproject
+anstee_*
+multiqc_data
+multiqc_report.html
