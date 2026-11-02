@@ -5,7 +5,7 @@ This file defines hooks and utility functions for the MultiQC plugin.
 
 import logging
 import importlib.metadata
-from multiqc.utils import config
+from multiqc import config
 
 log = logging.getLogger("multiqc")
 
@@ -23,12 +23,12 @@ def execute():
         "duplex_seq": [
             {
                 "fn": "*.csv",
-                "contents": "sample,metric,value",
+                "contents_re": "(?i)^sample,metric,value",
                 "num_lines": 1,
             },
             {
                 "fn": "*.tsv",
-                "contents": "sample\tmetric\tvalue",
+                "contents_re": "(?i)^sample\\tmetric\\tvalue",
                 "num_lines": 1,
             },
         ]

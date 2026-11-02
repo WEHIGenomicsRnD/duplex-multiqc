@@ -1,4 +1,4 @@
-from multiqc.modules.base_module import BaseMultiqcModule
+from multiqc.base_module import BaseMultiqcModule
 import logging
 import csv
 import io
@@ -142,8 +142,9 @@ class MultiqcModule(BaseMultiqcModule):
             info="MultiQC module for plotting duplex sequencing QC metrics",
         )
 
-        # sample_data[sample][metric] = value
-        self.sample_data = {}
+        # Underscore-prefixed: MultiQC >=1.2x deletes public child attributes after the module runs
+        # _sample_data[sample][metric] = value
+        self._sample_data = {}
         # metrics_dict[metric][sample] = value
         metrics_dict = {}
 
@@ -180,9 +181,9 @@ class MultiqcModule(BaseMultiqcModule):
                         )
                         continue
 
-                    if sample not in self.sample_data:
-                        self.sample_data[sample] = {}
-                    self.sample_data[sample][metric] = value
+                    if sample not in self._sample_data:
+                        self._sample_data[sample] = {}
+                    self._sample_data[sample][metric] = value
 
                     if metric not in metrics_dict:
                         metrics_dict[metric] = {}
@@ -192,7 +193,7 @@ class MultiqcModule(BaseMultiqcModule):
                 log.error(f"[duplex_seq] Failed to read {f['fn']}: {e}")
                 continue
 
-        if not self.sample_data:
+        if not self._sample_data:
             log.warning("[duplex_seq] No data rows found to display.")
             return
 
@@ -206,7 +207,7 @@ class MultiqcModule(BaseMultiqcModule):
             }
             for i, metric in enumerate(metrics_dict)
         }
-        self.general_stats_addcols(self.sample_data, headers=table_headers)
+        self.general_stats_addcols(self._sample_data, headers=table_headers)
 
         # --- Individual metric sections ---
         # Render known metrics in preferred order first, then any remaining unknowns.
@@ -343,7 +344,7 @@ class MultiqcModule(BaseMultiqcModule):
             "title": f"{_metric_label(metric)} Bar Plot",
             "xlab": "Sample",
             "ylab": _metric_label(metric),
-            "xmin": 0,
+            "ymin": 0,
             "tt_decimals": 6,
             "cpswitch": False,
         }
@@ -377,7 +378,7 @@ class MultiqcModule(BaseMultiqcModule):
             "title": f"{metric_title}",
             "ylab": "Value",
             "tt_decimals": 6,
-            "stacking": None,
+            "stacking": "group",
             "cpswitch": False,
         }
         return bargraph.plot(plot_data, cats, pconfig=pconfig)
@@ -402,7 +403,7 @@ class MultiqcModule(BaseMultiqcModule):
             "title": metric_title,
             "xlab": "Samples",
             "ylab": "Value",
-            "stacking": None,
+            "stacking": "group",
             "tt_decimals": 6,
             "cpswitch": False,
         }
