@@ -7,13 +7,14 @@ LABEL org.opencontainers.image.source="https://github.com/WEHIGenomicsRnD/duplex
 ENV PATH="/opt/wave/.pixi/envs/default/bin:${PATH}"
 
 # Install the plugin from the checkout (the release tag in CI). There is no git
-# in the image, so the source is copied in. Dependencies (multiqc, matplotlib)
-# already come with the base image.
+# in the image, so the source is copied in. Dependencies (multiqc)
+# come with the base image, except matplotlib, which is installed explicitly.
 COPY . /tmp/plugin
 RUN python -m ensurepip \
+    && python -m pip install --no-cache-dir matplotlib \
     && python -m pip install --no-cache-dir --no-deps /tmp/plugin \
     && python -m pip uninstall -y pip \
     && rm -rf /tmp/plugin
 
 # Fail the build if MultiQC or the plugin can't be loaded
-RUN multiqc --version && python -c "import duplex_multiqc"
+RUN multiqc --version && python -c "import matplotlib, duplex_multiqc"
